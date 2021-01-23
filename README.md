@@ -2,7 +2,7 @@
 
 # Project configuration
 ### 1)configuration properties -> advanced -> charset -> Use Multi-byte Character Set
-### 2)linker -> system -> SubSystem -> Windows (/SUBSYSTEM:WINDOWS)
+### 2)configuration properties -> linker -> system -> SubSystem -> Windows (/SUBSYSTEM:WINDOWS)
 
 # USE
 
