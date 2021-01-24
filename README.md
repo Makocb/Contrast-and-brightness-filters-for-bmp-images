@@ -2,7 +2,7 @@
 
 # USE
 
-When the app is opened move one or both trackbars to adjust brightness (bottom scrollbar) and contrast (right-side scrollbar)
+When the app is opened move one or both trackbars to adjust brightness (bottom trackbar) and contrast (right-side trackbar)
 
 # Troubleshooting
 If the project fails to properly load its configuration properties, you can change them manually\
