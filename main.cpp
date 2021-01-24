@@ -2,9 +2,6 @@
 
 const char* className = "MyCLASSNAME!";
 
-HWND hWndHScrollBar;
-
-HWND hWndVScrollBar;
 
 HWND hwndTrackVr;
 
@@ -157,9 +154,6 @@ LRESULT CALLBACK WndProc( HWND    hWnd,
 
         case WM_CLOSE:
             
-            DestroyWindow(hWndVScrollBar);
-            
-            DestroyWindow(hWndHScrollBar);
             
             DestroyWindow(hWnd);
 
