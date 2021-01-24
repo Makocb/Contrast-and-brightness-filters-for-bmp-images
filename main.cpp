@@ -6,24 +6,31 @@ HWND hWndHScrollBar;
 
 HWND hWndVScrollBar;
 
+HWND hwndTrackVr;
+
+HWND hwndTrackHr;
+
 #define IDI_ICON       101
 
 #define IDC_HSCROLLBAR 1000
 
 #define IDC_VSCROLLBAR 1001
 
+#define ID_TRACKBAR 1002
+
 LRESULT CALLBACK WndProc( HWND    hWnd,
                           UINT    Msg,
                           WPARAM  wParam,          
                           LPARAM  lParam )
 {
+
     static Bitmap* bitmap = new Bitmap();
     static bool canPaint = true;
 
     static bool init = true;
 
-    static int pos1 = 50;
-    static int pos2 = 50;
+    static int pos1 = 0;
+    static int pos2 = 100;
     switch (Msg)
     {
 
@@ -32,102 +39,72 @@ LRESULT CALLBACK WndProc( HWND    hWnd,
         {
 
             int ScrollBarWidth  = 25;
-            int ScrollBarHeight = 15;
+            int ScrollBarHeight = 25;
             
             RECT Rect;
             GetClientRect(hWnd, &Rect);
- 
-            hWndVScrollBar = CreateWindowEx(
+
+            hwndTrackVr = CreateWindowEx(
+                0,                                      // no extended styles 
+                TRACKBAR_CLASS,                         // class name 
+                "TrackBar1",                            // title (caption) 
+                WS_CHILD |
+                WS_VISIBLE |
+                TBS_AUTOTICKS |
+                TBS_ENABLESELRANGE | TBS_VERT,          // style 
+                Rect.right - ScrollBarWidth,
                 0,
-                "SCROLLBAR", 
-                    NULL, 
-                    WS_VISIBLE | WS_CHILD | SBS_VERT,
-                        Rect.right - ScrollBarWidth, 
-                        0, 
-                            ScrollBarWidth, 
-                            Rect.bottom - ScrollBarHeight, 
-                                hWnd, 
-                                    (HMENU)IDC_VSCROLLBAR, 
-                                    (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE), 
-                                    NULL);
+                ScrollBarWidth,
+                Rect.bottom - ScrollBarHeight,          // size 
+                hWnd,                                   // parent window 
+                (HMENU)ID_TRACKBAR,                     // control identifier 
+                (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE),                   
+                NULL                                    // no WM_CREATE parameter 
+            );
 
-            HWND hwndButton = CreateWindow(
-                "BUTTON",   // Predefined class; Unicode assumed 
-                "UPDATE",       // Button text 
-                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-                    10,         // x position 
-                        10,         // y position 
-                        100,        // Button width
-                            50,         // Button height
-                            hWnd,       // Parent window
-                                NULL,       // No menu.
-                                (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE),
-                                    NULL);      // Pointer not needed.
+            hwndTrackHr = CreateWindowEx(
+                0,                                      // no extended styles 
+                TRACKBAR_CLASS,                         // class name 
+                "TrackBar2",              
+                WS_CHILD | 
+                WS_VISIBLE | 
+                TBS_AUTOTICKS | 
+                TBS_ENABLESELRANGE| TBS_HORZ,           // style 
+                0, Rect.bottom - ScrollBarHeight,       // position 
+                Rect.right - ScrollBarWidth,
+                ScrollBarHeight,                        // size 
+                hWnd,                                   // parent window 
+                (HMENU)ID_TRACKBAR,                     // control identifier 
+                (HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE),                      
+             NULL                                       // no WM_CREATE parameter 
+             ); 
 
-            if (!hWndVScrollBar)
 
-                MessageBox(NULL, "Vertical Scroll Bar Failed.", "Error", MB_OK | MB_ICONERROR);
-
-            hWndHScrollBar = CreateWindowEx(
-                0,
-                "SCROLLBAR", 
-                    NULL, 
-                    WS_VISIBLE | WS_CHILD | SBS_HORZ,
-                        0,
-                        Rect.bottom - ScrollBarHeight, 
-                            Rect.right - ScrollBarWidth, 
-                            ScrollBarHeight, 
-                                hWnd, 
-                                (HMENU)IDC_HSCROLLBAR, 
-                                    (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE), 
-                                    NULL);
-
-            if (!hWndHScrollBar)
-                MessageBox(NULL, "Horizontal Scroll Bar Failed.", "Error", MB_OK | MB_ICONERROR);
-
-            SetScrollRange(hWndVScrollBar, SB_CTL, 0, 100, TRUE);
-            SetScrollPos(hWndVScrollBar, SB_CTL, 50, TRUE);
-
-            SetScrollRange(hWndHScrollBar, SB_CTL, 0, 100, TRUE);
-            SetScrollPos(hWndHScrollBar, SB_CTL, 50, TRUE);
+            SendMessageW(hwndTrackHr, TBM_SETPOS, FALSE, 0);
+            SendMessageW(hwndTrackVr, TBM_SETPOS, FALSE, 0);
 
         }
 
         break; 
-        case  WM_COMMAND:
-        {
-            canPaint = true;
-            InvalidateRect(hWnd, NULL, FALSE);
-        }
-        break;
+
         case WM_HSCROLL:
 
         {
             switch ((int)LOWORD(wParam))
             {
-                case SB_LINEUP:
 
-                    pos1 = 0;
-                 
-                    SetScrollPos((HWND)lParam, SB_CTL, pos1, TRUE);
-
+                case TB_ENDTRACK:
+                {
+                    canPaint = true;
+                    InvalidateRect(hWnd, NULL, FALSE);
+                }
                 break;
 
-                case SB_LINEDOWN:
-                    
-                    pos1 = 100;
-                    
-                    SetScrollPos((HWND)lParam, SB_CTL, pos1, TRUE);
-
-                break;
-
-                case SB_THUMBPOSITION:
-                case SB_THUMBTRACK:
-                
+                case TB_THUMBPOSITION:
+                case TB_THUMBTRACK:
+                {
                     pos1 = HIWORD(wParam);
-                    
-                    SetScrollPos((HWND)lParam, SB_CTL, pos1, TRUE);
-                    
+                }
                     break;
             }
            
@@ -142,29 +119,20 @@ LRESULT CALLBACK WndProc( HWND    hWnd,
             switch ((int)LOWORD(wParam))
 
             {
-                case SB_LINEUP:
-                    
-                    pos2 = 100;
 
-                    SetScrollPos((HWND)lParam, SB_CTL, 0 , TRUE);
+            case TB_ENDTRACK:
+            {
+                canPaint = true;
+                InvalidateRect(hWnd, NULL, FALSE);
+            }
 
-                break;
+            break;
 
-                case SB_LINEDOWN:
-                    
-                    pos2 = 0;
-
-                    SetScrollPos((HWND)lParam, SB_CTL, 100 , TRUE);
-
-                break;
-
-                case SB_THUMBPOSITION:
-                case SB_THUMBTRACK:
-                    
-                    pos2 = 100-HIWORD(wParam);
-
-                    SetScrollPos((HWND)lParam, SB_CTL, HIWORD(wParam) , TRUE);
-
+                case TB_THUMBPOSITION:
+                case TB_THUMBTRACK:
+                {
+                    pos2 = 100 - HIWORD(wParam);
+                }
                     break;
             }
 
@@ -172,10 +140,11 @@ LRESULT CALLBACK WndProc( HWND    hWnd,
         }
         break;
 
+
         case WM_PAINT: {
 
             if(init)
-            bitmap->loadBitmap("Sattelite4.bmp");
+            bitmap->loadBitmap("Sattelite.bmp");
 
             if (canPaint) {
                 bitmap->print(hWnd, pos1, pos2);
@@ -183,7 +152,7 @@ LRESULT CALLBACK WndProc( HWND    hWnd,
                 init = false;
                 canPaint = false;
             }
-            break;
+        break;
         }
 
         case WM_CLOSE:

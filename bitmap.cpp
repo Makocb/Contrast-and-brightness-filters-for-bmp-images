@@ -7,6 +7,29 @@
         bmHeight = 0;
     }
 
+    void Bitmap::calculateBrightness(color& inpColor, const int& brightness)
+    {
+        auto calculate = [brightness](int& inpColor) { inpColor = inpColor * (100 + brightness - 50) / 100; };
+            
+        calculate(inpColor.r);
+
+        calculate(inpColor.g);
+
+        calculate(inpColor.b);
+    }
+
+    void Bitmap::calculateContrast(color& inpColor, const int& contrast, const double& avarageBrightness, const int& delta)
+    {
+        auto calculate = [contrast, delta, avarageBrightness](int& inpColor) 
+        {inpColor = (int)((avarageBrightness + (delta * (100 + contrast - 50) / 100)) * inpColor / 255); };
+                
+        calculate(inpColor.r);
+
+        calculate(inpColor.g);
+
+        calculate(inpColor.b);
+    }
+
     void Bitmap::loadBitmap(const char* name)
     {
         HDC hdc_x = CreateCompatibleDC(NULL);
@@ -36,7 +59,7 @@
         DeleteObject(hBitmap);
     }
 
-    void Bitmap::print(HWND hWnd, int pos1, int pos2)
+    void Bitmap::print(HWND hWnd, int brightness, int contrast)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
@@ -46,61 +69,77 @@
         RECT* rectSc1 = new RECT;
 
         color col1;
+        COLORREF* colors = new COLORREF[bmWidth * bmHeight];
 
-        for (int i = 1; i <= this->bmWidth; i++) {
-            for (int j = 1; j <= this->bmHeight; j++) {
+        for (int i = 1; i <= bmWidth; i++) {
+            for (int j = 1; j <= bmHeight; j++) {
 
-                col1.r = this->content[(i - 1) * (this->bmHeight) + (j - 1)].r * (100 + pos1 - 50) / 100;
-                col1.g = this->content[(i - 1) * (this->bmHeight) + (j - 1)].g * (100 + pos1 - 50) / 100;
-                col1.b = this->content[(i - 1) * (this->bmHeight) + (j - 1)].b * (100 + pos1 - 50) / 100;
+                col1 = content[(i - 1) * bmHeight + (j - 1)];
+
+                calculateBrightness(col1,brightness);
 
                 avarageBrightness += (col1.r * 0.299 + col1.g * 0.587 + col1.b * 0.114);
             }
         }
 
-        avarageBrightness /= (this->bmWidth * this->bmHeight);
+        avarageBrightness /= (bmWidth * bmHeight);
 
         int scale = 2;
 
-        for (int i = 1; i <= this->bmWidth; i++) {
-            for (int j = 1; j <= this->bmHeight; j++) {
+        for (int i = 1; i <= bmWidth; i++) {
+            for (int j = 1; j <= bmHeight; j++) {
 
-                col1.r = this->content[(i - 1) * (this->bmHeight) + (j - 1)].r * (100 + pos1 - 50) / 100;
-                col1.g = this->content[(i - 1) * (this->bmHeight) + (j - 1)].g * (100 + pos1 - 50) / 100;
-                col1.b = this->content[(i - 1) * (this->bmHeight) + (j - 1)].b * (100 + pos1 - 50) / 100;
+                col1 = content[(i - 1) * bmHeight + (j - 1)];
+
+                calculateBrightness(col1, brightness);
 
                 int delta = (int)((col1.r * 0.299 + col1.g * 0.587 + col1.b * 0.114) - avarageBrightness);
 
-                col1.r = (int)((avarageBrightness + (delta * (100 + pos2 - 50) / 100)) * col1.r / 255);
-                col1.g = (int)((avarageBrightness + (delta * (100 + pos2 - 50) / 100)) * col1.g / 255);
-                col1.b = (int)((avarageBrightness + (delta * (100 + pos2 - 50) / 100)) * col1.b / 255);
+                calculateContrast(col1, contrast, avarageBrightness, delta);
 
-                if (col1.r > 255) { col1.r = 255; };
-                if (col1.g > 255) { col1.g = 255; };
-                if (col1.b > 255) { col1.b = 255; };
-                if (col1.r < 0) { col1.r = 0; };
-                if (col1.g < 0) { col1.g = 0; };
-                if (col1.b < 0) { col1.b = 0; };
+                auto checkBoundaries = [](int& color1)
+                {
+                if (color1 > 255)
+                    color1 = 255; 
 
-                COLORREF clrref = RGB(col1.r, col1.g, col1.b);
+                if (color1 < 0)
+                    color1 = 0; 
+                };
 
-                rectSc1->left = i + 200 + (scale - 1) * (i - (scale - 1));
-                rectSc1->top = j + (scale - 1) * (j - (scale - 1));
-                rectSc1->right = i + 200 + (scale - 1) * (i)+1;
-                rectSc1->bottom = j + (scale - 1) * (j)+1;
-                HBRUSH hBrush = CreateSolidBrush(clrref);
-                FillRect(hdc, rectSc1, hBrush);
-                DeleteObject(hBrush);
+                checkBoundaries(col1.r);
 
-                //for (int k = 0; k <= scale-1; k++)
-                //for (int m = 0; m <= scale-1; m++)
-                //COLORREF a = SetPixel(hdc_x, i+(scale-1)*(i-200)+k, j+m+ (scale-1) * (j-1), clrref);
+                checkBoundaries(col1.g);
+
+                checkBoundaries(col1.b);
+
+                colors[(j - 1) * (bmWidth) + (i - 1)] = RGB(col1.r, col1.g, col1.b);
+
             }
         }
         delete rectSc1;
 
+        HDC hdc_x = CreateCompatibleDC(NULL);
+
+        HBITMAP newhBitmap = CreateCompatibleBitmap(hdc_x, bmWidth, bmHeight);
+        newhBitmap = CreateBitmap(bmWidth, bmHeight, 1, 32, (void*)colors);
+
+        SelectObject(hdc_x, newhBitmap);
+
+        RECT* rect = new RECT;
+        GetWindowRect(hWnd, rect);
+
+            int width = rect->right - rect->left;
+            int height = rect->bottom - rect->top;
+
+        StretchBlt(hdc, 0, 0, width-45, height-70, hdc_x, 0, 0, bmWidth, bmHeight, SRCCOPY);
+
+        DeleteObject(rect);
         DeleteObject(rectSc1);
+
         DeleteDC(hdc);
+        DeleteDC(hdc_x);
+
+        delete[] colors;
 
         EndPaint(hWnd, &ps);
     }

@@ -5,7 +5,7 @@
 #include <cmath>
 #include <commctrl.h>
 #include <wingdi.h>
-#include <windef.h>
+//#include <windef.h>
 
 struct color
 {
@@ -21,6 +21,10 @@ public:
     int bmHeight;
 
     Bitmap();
+
+    void calculateBrightness(color& inpColor, const int& brightness);
+
+    void calculateContrast(color& inpColor,const int& contrast, const double& avarageBrightness, const int& delta);
 
     void loadBitmap(const char* name);
 
